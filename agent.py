@@ -25,12 +25,18 @@ model = LiteLLMModel(
     api_key=os.environ.get("OPENAI_API_KEY")
     )
 
-MCPBrowser = MCPClient(
-    {
-        "url": "http://localhost:8931/mcp", 
-        "transport": "streamable-http"
+try:
+    MCPBrowser = MCPClient(
+        {
+            "url": "http://localhost:8931/mcp",
+            "transport": "streamable-http",
         }
-)
+    )
+    MCP_BROWSER_TOOLS = MCPBrowser.get_tools()
+except Exception as exc:
+    MCPBrowser = None
+    MCP_BROWSER_TOOLS = []
+    print(f"Warning: MCPBrowser unavailable ({exc})")
 
 TOOL_REGISTRY = {
     "DuckDuckGoSearchTool": DuckDuckGoSearchTool,
@@ -44,8 +50,10 @@ TOOL_REGISTRY = {
     #"SqliteSelectTool": SqliteSelectTool,
     "ReadExcelTool": ReadExcelTool,
     "CalculatorTool": CalculatorTool,
-    "MCPBrowser": MCPBrowser.get_tools() #npx @playwright/mcp@latest --port 8931
 }
+
+if MCP_BROWSER_TOOLS:
+    TOOL_REGISTRY["MCPBrowser"] = MCP_BROWSER_TOOLS  # npx @playwright/mcp@latest --port 8931
 
 def _format_agent_response(result):
     if isinstance(result, str):
