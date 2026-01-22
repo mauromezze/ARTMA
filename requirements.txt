@@ -8,3 +8,4 @@ wikipedia-api
 smolagents[mcp]
 pandas>=2.0.0
 openpyxl>=3.1.0
+PyPDF2>=3.0.0

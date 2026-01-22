@@ -12,7 +12,7 @@ from smolagents import (
     WikipediaSearchTool,
     MCPClient
 )
-from tools import CurrentDateTimeTool, ReadExcelTool, CalculatorTool
+from tools import CurrentDateTimeTool, ReadExcelTool, ReadPdfTool, CalculatorTool
 from dotenv import load_dotenv
 import os
 import gradio as gr
@@ -82,6 +82,7 @@ TOOL_REGISTRY = {
     "CurrentDateTimeTool": CurrentDateTimeTool,
     #"SqliteSelectTool": SqliteSelectTool,
     "ReadExcelTool": ReadExcelTool,
+    "ReadPdfTool": ReadPdfTool,
     "CalculatorTool": CalculatorTool,
 }
 

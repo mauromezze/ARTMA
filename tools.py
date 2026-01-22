@@ -71,6 +71,66 @@ class ReadExcelTool(Tool):
         return json.dumps(df.to_dict(orient="records"))
 
 
+class ReadPdfTool(Tool):
+    name = "read_pdf"
+    description = "Extract text from a PDF file and return it as JSON."
+    inputs = {
+        "file_path": {"type": "string", "description": "Path to the PDF file."},
+        "start_page": {
+            "type": "integer",
+            "description": "Optional 1-based page to start from; defaults to 1.",
+            "nullable": True,
+        },
+        "max_pages": {
+            "type": "integer",
+            "description": "Optional maximum number of pages to read.",
+            "nullable": True,
+        },
+    }
+    output_type = "string"
+
+    def forward(self, file_path, start_page=None, max_pages=None):
+        try:
+            from PyPDF2 import PdfReader
+        except ImportError:
+            return json.dumps(
+                {"error": "Missing dependency: install PyPDF2 to read PDF files."}
+            )
+        start_page = int(start_page) if start_page is not None else 1
+        if start_page < 1:
+            return json.dumps({"error": "start_page must be >= 1."})
+        try:
+            reader = PdfReader(file_path)
+        except Exception as exc:
+            return json.dumps({"error": f"Failed to open PDF: {exc}"})
+        total_pages = len(reader.pages)
+        start_idx = start_page - 1
+        if start_idx >= total_pages:
+            return json.dumps(
+                {"error": f"start_page out of range (1-{total_pages})."}
+            )
+        end_idx = total_pages
+        if max_pages is not None:
+            try:
+                max_pages = int(max_pages)
+            except Exception:
+                return json.dumps({"error": "max_pages must be an integer."})
+            if max_pages < 1:
+                return json.dumps({"error": "max_pages must be >= 1."})
+            end_idx = min(start_idx + max_pages, total_pages)
+        texts = []
+        for page in reader.pages[start_idx:end_idx]:
+            text = page.extract_text() or ""
+            texts.append(text)
+        return json.dumps(
+            {
+                "text": "\n\n".join(texts).strip(),
+                "page_count": end_idx - start_idx,
+                "total_pages": total_pages,
+            }
+        )
+
+
 class CalculatorTool(Tool):
     name = "calculator"
     description = "Evaluate a math expression using +, -, *, /, **, parentheses, and unary +/-."
