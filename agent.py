@@ -25,6 +25,39 @@ model = LiteLLMModel(
     api_key=os.environ.get("OPENAI_API_KEY")
     )
 
+_MCP_BROWSER_ALLOWED_TOOLS = {
+    "browser_navigate",
+    "browser_click",
+    #"browser_type",
+    #"browser_press",
+    #"browser_wait",
+    #"browser_select",
+    #"browser_scroll",
+    "browser_get_content",
+    "browser_get_text",
+}
+
+
+def _tool_name(tool):
+    name = getattr(tool, "name", None)
+    if name:
+        return name
+    if isinstance(tool, dict):
+        return tool.get("name")
+    return None
+
+
+def _filter_mcp_browser_tools(tools):
+    if not _MCP_BROWSER_ALLOWED_TOOLS:
+        return tools
+    filtered = []
+    for tool in tools:
+        name = _tool_name(tool)
+        if name in _MCP_BROWSER_ALLOWED_TOOLS:
+            filtered.append(tool)
+    return filtered
+
+
 try:
     MCPBrowser = MCPClient(
         {
@@ -32,7 +65,7 @@ try:
             "transport": "streamable-http",
         }
     )
-    MCP_BROWSER_TOOLS = MCPBrowser.get_tools()
+    MCP_BROWSER_TOOLS = _filter_mcp_browser_tools(MCPBrowser.get_tools())
 except Exception as exc:
     MCPBrowser = None
     MCP_BROWSER_TOOLS = []
@@ -79,6 +112,8 @@ def chat_with_agent(message, history, agent_type, enabled_tools, max_steps, plan
             tools.append(entry)
     max_steps = int(max_steps) if str(max_steps).strip() else None
     planning_interval = int(planning_interval) if str(planning_interval).strip() else None
+    if planning_interval is not None and planning_interval <= 0:
+        planning_interval = None
     if agent_type == "CodeAgent":
         agent = CodeAgent(
             tools=tools,
